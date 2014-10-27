@@ -91,6 +91,7 @@ void MainWindow::clear()
     _isChooseVertexMode=false;
     ui->_startVertexId->setValue(0);
     ui->_endVertexId->setValue(0);
+    ui->_distance->setText("");
 
 }
 
@@ -141,11 +142,18 @@ void MainWindow::runMVD()
     }
 
     // Apply minimal distance computation
-    QList<gt::Vertex*> path;
+    QList<int> path;
     double distance = gt::ComputeMinDistance(graph, startVertexId, endVertexId, &path);
 
 
     // Display the result:
+    ui->_distance->setText(QString("%1").arg(distance));
+
+//    foreach (QGraphicsLineItem * edge, _edges)
+//    {
+//        int vertexIndex1 = edge->data(KEY_EDGE_VERTEX1).toInt();
+//        int vertexIndex2 = edge->data(KEY_EDGE_VERTEX2).toInt();
+//    }
 
 }
 
@@ -252,16 +260,16 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
 
             QGraphicsSceneMouseEvent * mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
 
-            if (_scene.items(
+            if (_scene.items(QRectF(
                         mouseEvent->scenePos().x() - VERTEX_SIZE*0.5,
                         mouseEvent->scenePos().y() - VERTEX_SIZE*0.5,
                         VERTEX_SIZE,
-                        VERTEX_SIZE
+                        VERTEX_SIZE)
                         ).isEmpty())
             {
                 QGraphicsEllipseItem * vertex = _scene.addEllipse(
                             QRectF(-VERTEX_SIZE*0.5, -VERTEX_SIZE*0.5, VERTEX_SIZE, VERTEX_SIZE),
-                            QPen(),
+                            QPen(Qt::black, 0),
                             QBrush(Qt::white)
                             );
                 vertex->setTransform(
@@ -275,26 +283,30 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
                 vertexId->setParentItem(vertex);
                 vertexId->setTransform(
                             QTransform::fromScale(0.005, 0.005)
-                            * QTransform::fromTranslate(-VERTEX_SIZE*( (id < 9) ? 0.15 : 0.25 ), -VERTEX_SIZE*0.30)
+                            * QTransform::fromTranslate(-VERTEX_SIZE*( (id < 9) ? 0.18 : 0.28 ), -VERTEX_SIZE*0.35)
                             );
                 vertexId->setZValue(vertex->zValue()+0.1);
 
             }
             else
             {
-
-                if (qgraphicsitem_cast<QGraphicsEllipseItem*>(_scene.itemAt(mouseEvent->scenePos()))
-                        || qgraphicsitem_cast<QGraphicsSimpleTextItem*>(_scene.itemAt(mouseEvent->scenePos())))
+                QGraphicsItem * item = _scene.itemAt(mouseEvent->scenePos(), QTransform());
+                if (qgraphicsitem_cast<QGraphicsEllipseItem*>(item)
+                        || qgraphicsitem_cast<QGraphicsSimpleTextItem*>(item))
                 {
-                    QGraphicsEllipseItem* vertex = qgraphicsitem_cast<QGraphicsEllipseItem*>(_scene.itemAt(mouseEvent->scenePos())->parentItem());
+                    QGraphicsEllipseItem* vertex = qgraphicsitem_cast<QGraphicsEllipseItem*>(item->parentItem());
                     if (!vertex)
-                        vertex = qgraphicsitem_cast<QGraphicsEllipseItem*>(_scene.itemAt(mouseEvent->scenePos()));
+                        vertex = qgraphicsitem_cast<QGraphicsEllipseItem*>(item);
 
                     if (vertex)
                     {
                         _isDrawingEdge=true;
-                        _drawingEdge = _scene.addLine(0.0, 0.0, mouseEvent->scenePos().x()-vertex->scenePos().x(), mouseEvent->scenePos().y()-vertex->scenePos().y());
-                        _drawingEdge->translate(vertex->scenePos().x(), vertex->scenePos().y());
+                        _drawingEdge = _scene.addLine(0.0,
+                                                      0.0,
+                                                      mouseEvent->scenePos().x()-vertex->scenePos().x(),
+                                                      mouseEvent->scenePos().y()-vertex->scenePos().y(),
+                                                      QPen(Qt::black, 0));
+                        _drawingEdge->setTransform(QTransform::fromTranslate(vertex->scenePos().x(), vertex->scenePos().y()));
                         _drawingEdge->setZValue(1.0);
                         _drawingEdge->setData(KEY_EDGE_VERTEX1, vertex->data(KEY_VERTEX_ID));
                     }
@@ -316,12 +328,13 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
             // need to put the connecting line on the background otherwise it is detected under the mouse
             _drawingEdge->setZValue(-1.0);
 
-            if (qgraphicsitem_cast<QGraphicsEllipseItem*>(_scene.itemAt(mouseEvent->scenePos()))
-                    || qgraphicsitem_cast<QGraphicsSimpleTextItem*>(_scene.itemAt(mouseEvent->scenePos())))
+            QGraphicsItem * item = _scene.itemAt(mouseEvent->scenePos(), QTransform());
+            if (qgraphicsitem_cast<QGraphicsEllipseItem*>(item)
+                    || qgraphicsitem_cast<QGraphicsSimpleTextItem*>(item))
             {
-                QGraphicsEllipseItem* vertex = qgraphicsitem_cast<QGraphicsEllipseItem*>(_scene.itemAt(mouseEvent->scenePos())->parentItem());
+                QGraphicsEllipseItem* vertex = qgraphicsitem_cast<QGraphicsEllipseItem*>(item->parentItem());
                 if (!vertex)
-                    vertex = qgraphicsitem_cast<QGraphicsEllipseItem*>(_scene.itemAt(mouseEvent->scenePos()));
+                    vertex = qgraphicsitem_cast<QGraphicsEllipseItem*>(item);
 
                 if (vertex)
                 {
@@ -340,7 +353,7 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
                         // draw edge weight
                         QGraphicsSimpleTextItem * edgeWeight = _scene.addSimpleText(QString("%1").arg(defaultWeight));
                         edgeWeight->setParentItem(_drawingEdge);
-                        edgeWeight->setPen(QPen(Qt::blue));
+                        edgeWeight->setBrush(Qt::blue);
                         QLineF line = _drawingEdge->line();
                         edgeWeight->setTransform(
                                     QTransform::fromScale(0.005, 0.005)
@@ -362,7 +375,7 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
         else if (event->type() == QEvent::GraphicsSceneMouseDoubleClick)
         {
             QGraphicsSceneMouseEvent * mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
-            QGraphicsItem * item = _scene.itemAt(mouseEvent->scenePos());
+            QGraphicsItem * item = _scene.itemAt(mouseEvent->scenePos(), QTransform());
             QGraphicsSimpleTextItem* text = qgraphicsitem_cast<QGraphicsSimpleTextItem*>(item);
 
             // Modify edge weight
@@ -386,9 +399,10 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
             // Choose vertex as start or end
             if (qgraphicsitem_cast<QGraphicsEllipseItem*>(item) || text)
             {
-                QGraphicsEllipseItem* vertex = qgraphicsitem_cast<QGraphicsEllipseItem*>(_scene.itemAt(mouseEvent->scenePos())->parentItem());
+                QGraphicsItem * item = _scene.itemAt(mouseEvent->scenePos(), QTransform());
+                QGraphicsEllipseItem* vertex = qgraphicsitem_cast<QGraphicsEllipseItem*>(item->parentItem());
                 if (!vertex)
-                    vertex = qgraphicsitem_cast<QGraphicsEllipseItem*>(_scene.itemAt(mouseEvent->scenePos()));
+                    vertex = qgraphicsitem_cast<QGraphicsEllipseItem*>(item);
 
                 if (vertex && _isChooseVertexMode)
                 {
@@ -396,12 +410,12 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
                                                      -VERTEX_SIZE*0.05,
                                                      VERTEX_SIZE*0.05,
                                                      VERTEX_SIZE*0.05);
-                    QGraphicsEllipseItem* overlay = _scene.addEllipse(r);
+                    QGraphicsEllipseItem* overlay = _scene.addEllipse(r,QPen(Qt::black,0));
                     overlay->setZValue(vertex->zValue()-1);
                     overlay->setParentItem(vertex);
                     QGraphicsSimpleTextItem * text = _scene.addSimpleText("");
                     text->setParentItem(overlay);
-                    text->setPen(QPen(Qt::blue));
+                    text->setPen(QPen(Qt::blue,0));
                     text->setTransform(
                                 QTransform::fromScale(0.005, 0.005)
                                 * QTransform::fromTranslate(-0.5*r.width(),r.height()*0.51)
@@ -413,14 +427,14 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
                     {
                         ui->_chooseSVId->setDown(false);
                         ui->_startVertexId->setValue(vertex->data(KEY_VERTEX_ID).toInt()+1);
-                        overlay->setPen(QPen(Qt::darkBlue));
+                        overlay->setPen(QPen(Qt::darkBlue,0));
                         text->setText("Start");
                     }
                     else if (_chooseSender == ui->_chooseEVId)
                     {
                         ui->_chooseEVId->setDown(false);
                         ui->_endVertexId->setValue(vertex->data(KEY_VERTEX_ID).toInt()+1);
-                        overlay->setPen(QPen(Qt::darkYellow));
+                        overlay->setPen(QPen(Qt::darkYellow,0));
                         text->setText("End");
                     }
                     _isChooseVertexMode=false;

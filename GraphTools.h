@@ -52,9 +52,11 @@ struct Graph
 
 //******************************************************************************
 
+bool TestStdDoubleMaxLimit();
+
 void GreedyGraphColoring(Graph * graph);
 
-double ComputeMinDistance(const Graph & graph, int startIndex, int endIndex, QList<Vertex *> *path);
+double ComputeMinDistance(const Graph & graph, int startIndex, int endIndex, QList<int> *path);
 
 //******************************************************************************
 

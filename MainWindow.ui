@@ -44,16 +44,9 @@
     <item row="1" column="0" colspan="2">
      <widget class="QGroupBox" name="groupBox">
       <property name="title">
-       <string>Greedy Graph Coloring</string>
+       <string>Greedy graph coloring :</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
-       <item row="0" column="1">
-        <widget class="QPushButton" name="_runGGC">
-         <property name="text">
-          <string>Run</string>
-         </property>
-        </widget>
-       </item>
        <item row="0" column="0">
         <spacer name="horizontalSpacer">
          <property name="orientation">
@@ -67,23 +60,30 @@
          </property>
         </spacer>
        </item>
+       <item row="0" column="1">
+        <widget class="QPushButton" name="_runGGC">
+         <property name="text">
+          <string>Run</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>
     <item row="2" column="0" colspan="2">
      <widget class="QGroupBox" name="groupBox_2">
       <property name="title">
-       <string>GroupBox</string>
+       <string>Compute shortest path :</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_3">
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_2">
+       <item row="2" column="3">
+        <widget class="QPushButton" name="_runMVD">
          <property name="text">
-          <string>End Vertex :</string>
+          <string>Run</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="2" column="2">
         <spacer name="horizontalSpacer_3">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -96,21 +96,28 @@
          </property>
         </spacer>
        </item>
-       <item row="2" column="1">
-        <widget class="QPushButton" name="_runMVD">
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_3">
          <property name="text">
-          <string>Run</string>
+          <string>Distance : </string>
          </property>
         </widget>
        </item>
-       <item row="0" column="0">
+       <item row="1" column="0" colspan="3">
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>End vertex :</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0" colspan="3">
         <widget class="QLabel" name="label">
          <property name="text">
-          <string>Start Vertex :</string>
+          <string>Start vertex :</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
+       <item row="1" column="3">
         <widget class="QSpinBox" name="_endVertexId">
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -120,7 +127,7 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
+       <item row="0" column="3">
         <widget class="QSpinBox" name="_startVertexId">
          <property name="frame">
           <bool>true</bool>
@@ -136,17 +143,24 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="2">
+       <item row="0" column="4">
         <widget class="QToolButton" name="_chooseSVId">
          <property name="text">
           <string>...</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="2">
+       <item row="1" column="4">
         <widget class="QToolButton" name="_chooseEVId">
          <property name="text">
           <string>...</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLineEdit" name="_distance">
+         <property name="readOnly">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -161,7 +175,7 @@
      <x>0</x>
      <y>0</y>
      <width>439</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

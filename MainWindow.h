@@ -44,6 +44,8 @@ protected:
     void showEvent(QShowEvent * e);
     bool eventFilter(QObject *, QEvent *);
 
+
+
 protected slots:
     void onValueEdited();
     void onChooseVertexId();

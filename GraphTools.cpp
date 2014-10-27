@@ -1,6 +1,7 @@
 
 // STD
 #include <limits>
+#include <iostream>
 
 // Project
 #include "GraphTools.h"
@@ -8,6 +9,42 @@
 //******************************************************************************
 
 namespace gt {
+
+//******************************************************************************
+
+bool TestStdDoubleMaxLimit()
+{
+
+    double MAX = std::numeric_limits<double>::max();
+    double w = 2;
+
+    if (MAX != MAX + w)
+    {
+        std::cout << "MAX != MAX + w" << std::endl;
+        return false;
+    }
+
+    if (MAX != MAX - w)
+    {
+        std::cout << "MAX != MAX - w" << std::endl;
+        return false;
+    }
+
+    if (0 > MAX - w)
+    {
+        std::cout << "0 > MAX - w" << std::endl;
+        return false;
+    }
+
+
+    if (0 > MAX + w)
+    {
+        std::cout << "0 > MAX + w" << std::endl;
+        return false;
+    }
+
+    return true;
+}
 
 //******************************************************************************
 
@@ -69,8 +106,12 @@ void GreedyGraphColoring(Graph *graph)
  *
  * https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
  */
-double ComputeMinDistance(const Graph & graph, int startIndex, int endIndex, QList<Vertex*> * path)
+double ComputeMinDistance(const Graph & graph, int startIndex, int endIndex, QList<int> * path)
 {
+
+    if (!TestStdDoubleMaxLimit())
+        return -12345.0;
+
     if (!path)
         return -12345.0;
 
@@ -85,7 +126,7 @@ double ComputeMinDistance(const Graph & graph, int startIndex, int endIndex, QLi
     // initialization :
     int nbVertices = graph.vertices.size();
     QVector< QVector<double> > distMatrix(nbVertices);
-    QVector< QVector<Vertex*> > pathMatrix(nbVertices);
+    QVector< QList<int> > pathMatrix(nbVertices);
 
     for (int v=0; v<nbVertices; v++)
     {
@@ -123,13 +164,31 @@ double ComputeMinDistance(const Graph & graph, int startIndex, int endIndex, QLi
                 if (distMatrix[v.id][i] > distMatrix[u->id][i-1] + w)
                 {
                     distMatrix[v.id][i] = distMatrix[u->id][i-1] + w;
-//                    path << u;
+                    pathMatrix[v.id] << u->id;
                 }
             }
-
-
         }
     }
+
+    // test if there is negative-weight cycle
+    double w = std::numeric_limits<double>::max();
+    int index=nbVertices-2;
+    for (int j=0; j<nbVertices; j++)
+    {
+        Vertex v = graph.vertices[j];
+        QList<EdgeConnection> connectedVertices = graph.edges.value(v.id);
+        foreach (EdgeConnection ec, connectedVertices)
+        {
+            Vertex * u = ec.first;
+            w = ec.second;
+            if (distMatrix[v.id][index] > distMatrix[u->id][index] + w)
+            {
+                std::cerr << "A negative-weight loop found" << std::endl;
+                return -12345.0;
+            }
+        }
+    }
+
 
     double minDistance = distMatrix[endIndex][0];
     for (int i=1;i<nbVertices-1;i++)
@@ -137,6 +196,8 @@ double ComputeMinDistance(const Graph & graph, int startIndex, int endIndex, QLi
         if (minDistance > distMatrix[endIndex][i])
             minDistance = distMatrix[endIndex][i];
     }
+
+    *path = pathMatrix[endIndex];
 
     return minDistance;
 
