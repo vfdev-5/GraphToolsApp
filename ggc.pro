@@ -14,9 +14,9 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         MainWindow.cpp \
-    GreedyGraphColoringTools.cpp
+    GraphTools.cpp
 
 HEADERS  += MainWindow.h \
-    GreedyGraphColoringTools.h
+    GraphTools.h
 
 FORMS    += MainWindow.ui
