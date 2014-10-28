@@ -1,4 +1,8 @@
 
+// STD
+#include <iostream>
+#include <limits>
+
 // Qt
 #include <QGraphicsSimpleTextItem>
 #include <QGraphicsSceneMouseEvent>
@@ -42,7 +46,8 @@ MainWindow::MainWindow(QWidget *parent) :
     _isDrawingEdge(false),
     _editedItem(0),
     _isChooseVertexMode(false),
-    _chooseSender(0)
+    _chooseSender(0),
+    _path(0)
 {
     ui->setupUi(this);
     // connect
@@ -79,6 +84,7 @@ void MainWindow::clear()
     _scene.clear();
     _vertices.clear();
     _edges.clear();
+    _path = 0;
 
     _initialText = _scene.addSimpleText("Click here to add a vertex");
     _initialText->setPen(QColor(167,167,167));
@@ -92,6 +98,8 @@ void MainWindow::clear()
     ui->_startVertexId->setValue(0);
     ui->_endVertexId->setValue(0);
     ui->_distance->setText("");
+    ui->_chooseSVId->setDown(_isChooseVertexMode);
+    ui->_chooseEVId->setDown(_isChooseVertexMode);
 
 }
 
@@ -147,13 +155,56 @@ void MainWindow::runMVD()
 
 
     // Display the result:
+    if (distance < -12344.0)
+    {
+        ui->_distance->setText(QString("Path can not be found").arg(distance));
+        return;
+    }
+    else if (distance == std::numeric_limits<double>::max())
+    {
+        ui->_distance->setText(QString("No path between vertices").arg(distance));
+        return;
+    }
+
     ui->_distance->setText(QString("%1").arg(distance));
 
-//    foreach (QGraphicsLineItem * edge, _edges)
-//    {
-//        int vertexIndex1 = edge->data(KEY_EDGE_VERTEX1).toInt();
-//        int vertexIndex2 = edge->data(KEY_EDGE_VERTEX2).toInt();
-//    }
+#ifdef _DEBUG
+    std::cout << "Shortest path : ";
+    foreach (int index, path)
+    {
+        std::cout << index + 1 << " -> ";
+    }
+    std::cout << " || " << std::endl;
+#endif
+
+
+    // draw path :
+    _scene.removeItem(_path);
+    _path = new QGraphicsItemGroup();
+    _scene.addItem(_path);
+
+    for (int i=0; i<path.size()-1;i++)
+    {
+        int pvi1=path[i];
+        int pvi2=path[i+1];
+
+        if (pvi1 < 0 || pvi1 > _vertices.size()-1 ||
+                pvi2 < 0 || pvi2 > _vertices.size()-1)
+        {
+            std::cerr << "Failed to find drawn vertices" << std::endl;
+            break;
+        }
+
+        QGraphicsLineItem* line = new QGraphicsLineItem(
+                    _vertices[pvi1]->scenePos().x(),
+                    _vertices[pvi1]->scenePos().y(),
+                    _vertices[pvi2]->scenePos().x(),
+                    _vertices[pvi2]->scenePos().y()
+                    );
+        line->setPen(QPen(Qt::red,VERTEX_SIZE*0.05));
+        _path->addToGroup(line);
+    }
+    _path->setZValue(PATH_LINE_Z);
 
 }
 
@@ -185,10 +236,41 @@ void MainWindow::onValueEdited()
 
 void MainWindow::onChooseVertexId()
 {
-    _isChooseVertexMode=true;
     QToolButton * tb = qobject_cast<QToolButton*>(sender());
     if (tb)
     {
+        // disable previous button if ChooseVertexMode is already is on
+        if (_isChooseVertexMode)
+        {
+            ui->_chooseSVId->setDown(false);
+            ui->_chooseEVId->setDown(false);
+        }
+
+        _isChooseVertexMode=true;
+
+        // clear previous result:
+        int index = -1;
+        if (ui->_chooseSVId == tb && ui->_startVertexId->value() > 0)
+        {
+            index = ui->_startVertexId->value() - 1;
+        }
+        else if (ui->_chooseEVId == tb && ui->_endVertexId->value() > 0)
+        {
+            index = ui->_endVertexId->value() - 1;
+        }
+        if (index >= 0 && index < _vertices.size())
+        {
+            QGraphicsEllipseItem * vertex = _vertices[index];
+            foreach (QGraphicsItem* item, vertex->childItems())
+            {
+                QGraphicsEllipseItem * overlay = qgraphicsitem_cast<QGraphicsEllipseItem*>(item);
+                if (overlay)
+                {
+                    _scene.removeItem(overlay);
+                }
+            }
+        }
+
         tb->setDown(true);
         _chooseSender=tb;
     }
@@ -207,38 +289,33 @@ bool MainWindow::setupGraph(gt::Graph *graph)
         graph->vertices[i].id = _vertices[i]->data(KEY_VERTEX_ID).toInt();
     }
 
-    foreach ( QGraphicsLineItem * edge, _edges)
+    // Factor 2 due to the indirected visual graph representation
+    QVector<gt::Edge> edges(2*_edges.size());
+    for (int i=0; i< _edges.size(); i++)
     {
+        QGraphicsLineItem * edge = _edges[i];
         int vertexIndex1 = edge->data(KEY_EDGE_VERTEX1).toInt();
         int vertexIndex2 = edge->data(KEY_EDGE_VERTEX2).toInt();
         int weight = edge->data(KEY_EDGE_WEIGHT).toInt();
 
-
-        if (!graph->edges.contains(vertexIndex1))
+        if (weight < 0)
         {
-            QList<gt::EdgeConnection> vts = QList<gt::EdgeConnection>()
-                    << gt::EdgeConnection(&graph->vertices[vertexIndex2], weight);
-            graph->edges.insert(vertexIndex1, vts);
-        }
-        else
-        {
-            QList<gt::EdgeConnection> & vts = graph->edges[vertexIndex1];
-            vts << gt::EdgeConnection(&graph->vertices[vertexIndex2], weight);
+            std::cerr << "Weights should not negative for indirected graphs" << std::endl;
+            return false;
         }
 
-        if (!graph->edges.contains(vertexIndex2))
-        {
-            QList<gt::EdgeConnection> vts = QList<gt::EdgeConnection>()
-                    << gt::EdgeConnection(&graph->vertices[vertexIndex1], weight);
-            graph->edges.insert(vertexIndex2, vts);
-        }
-        else
-        {
-            QList<gt::EdgeConnection> & vts = graph->edges[vertexIndex2];
-            vts << gt::EdgeConnection(&graph->vertices[vertexIndex1], weight);
-        }
+        edges[2*i].a = &graph->vertices[vertexIndex1];
+        edges[2*i].b = &graph->vertices[vertexIndex2];
+        edges[2*i].weight = weight;
+
+        edges[2*i+1].a = &graph->vertices[vertexIndex2];
+        edges[2*i+1].b = &graph->vertices[vertexIndex1];
+        edges[2*i+1].weight = weight;
 
     }
+
+
+    graph->setEdges(edges);
 
     if (graph->vertices.isEmpty())
         return false;
@@ -275,7 +352,7 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
                 vertex->setTransform(
                             QTransform::fromTranslate(mouseEvent->scenePos().x(), mouseEvent->scenePos().y())
                             );
-                vertex->setZValue(0.0);
+                vertex->setZValue(VERTEX_CIRCLE_Z);
                 _vertices << vertex;
                 int id = _vertices.size()-1;
                 vertex->setData(KEY_VERTEX_ID, id);
@@ -285,7 +362,7 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
                             QTransform::fromScale(0.005, 0.005)
                             * QTransform::fromTranslate(-VERTEX_SIZE*( (id < 9) ? 0.18 : 0.28 ), -VERTEX_SIZE*0.35)
                             );
-                vertexId->setZValue(vertex->zValue()+0.1);
+                vertexId->setZValue(VERTEX_TEXT_Z);
 
             }
             else
@@ -307,7 +384,7 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
                                                       mouseEvent->scenePos().y()-vertex->scenePos().y(),
                                                       QPen(Qt::black, 0));
                         _drawingEdge->setTransform(QTransform::fromTranslate(vertex->scenePos().x(), vertex->scenePos().y()));
-                        _drawingEdge->setZValue(1.0);
+                        _drawingEdge->setZValue(VERTEX_CIRCLE_Z);
                         _drawingEdge->setData(KEY_EDGE_VERTEX1, vertex->data(KEY_VERTEX_ID));
                     }
 
@@ -326,7 +403,7 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
             QGraphicsSceneMouseEvent * mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
 
             // need to put the connecting line on the background otherwise it is detected under the mouse
-            _drawingEdge->setZValue(-1.0);
+            _drawingEdge->setZValue(EDGE_LINE_Z);
 
             QGraphicsItem * item = _scene.itemAt(mouseEvent->scenePos(), QTransform());
             if (qgraphicsitem_cast<QGraphicsEllipseItem*>(item)
@@ -341,7 +418,7 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
                     double x = _drawingEdge->transform().dx();
                     double y = _drawingEdge->transform().dy();
                     _drawingEdge->setLine(0.0,0.0, vertex->scenePos().x()-x, vertex->scenePos().y()-y);
-                    _drawingEdge->setZValue(-1.0);
+                    _drawingEdge->setZValue(EDGE_LINE_Z);
 
                     if (_drawingEdge->data(KEY_EDGE_VERTEX1) == vertex->data(KEY_EDGE_VERTEX1))
                         _scene.removeItem(_drawingEdge);
@@ -359,7 +436,7 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
                                     QTransform::fromScale(0.005, 0.005)
                                     * QTransform::fromTranslate(line.x2()*0.5, line.y2()*0.5)
                                     );
-
+                        edgeWeight->setZValue(EDGE_TEXT_Z);
                         // add to graph edges
                         _edges << _drawingEdge;
                     }

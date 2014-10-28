@@ -27,12 +27,13 @@ struct Vertex
 
 //******************************************************************************
 
-//struct Edge
-//{
-//    typedef QPair<Vertex,Vertex> EdgeConnection;
-//    EdgeConnection connection;
-//    double weight;
-//};
+struct Edge
+{
+    Edge() : a(0), b(0), weight(-1)
+    {}
+    Vertex *a,*b;
+    double weight;
+};
 
 //******************************************************************************
 
@@ -45,8 +46,18 @@ struct Graph
     {
     }
     QVector<Vertex> vertices;
-//    QHash<int, QList<Vertex*> > edges;
-    QHash<int, QList<EdgeConnection> > edges;
+    void setEdges(const QVector<Edge> & edges);
+
+    const QVector<Edge> & getEdges() const
+    { return _edges; }
+    const QHash<int, QList<EdgeConnection> > & getEdgeConnections() const
+    { return _edgeConnections; }
+
+protected:
+
+    QVector<Edge> _edges;
+    QHash<int, QList<EdgeConnection> > _edgeConnections;
+
 
 };
 

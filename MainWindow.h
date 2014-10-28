@@ -23,6 +23,12 @@ static const int KEY_EDGE_VERTEX2=1;
 static const int KEY_EDGE_WEIGHT=2;
 static const int KEY_VERTEX_ID=0;
 
+static const double VERTEX_CIRCLE_Z = 10.0;
+static const double VERTEX_TEXT_Z = 11.0;
+static const double EDGE_LINE_Z = 0.0;
+static const double EDGE_TEXT_Z = 5.0;
+static const double PATH_LINE_Z = 4.0;
+
 //******************************************************************************
 
 class MainWindow : public QMainWindow
@@ -56,6 +62,7 @@ private:
 
     QVector<QGraphicsEllipseItem*> _vertices;
     QVector<QGraphicsLineItem*> _edges; //!< GraphicsItem contains data info : key=0 -> vertex1 number, key=1 -> vertex2 number, key=3 -> edge weight
+    QGraphicsItemGroup* _path; //!< GraphicsItem contains data info : key=0 -> vertex1 number, key=1 -> vertex2 number, key=3 -> edge weight
 
 
     QGraphicsSimpleTextItem * _initialText;
