@@ -63,7 +63,8 @@ MainWindow::MainWindow(QWidget *parent) :
     _valueEditor.setWindowFlags(Qt::Popup);
     _valueEditor.installEventFilter(this);
     _valueEditor.setAlignment(Qt::AlignRight);
-    connect(&_valueEditor, SIGNAL(returnPressed()), this, SLOT(onValueEdited()));
+//    connect(&_valueEditor, SIGNAL(returnPressed()), this, SLOT(onValueEdited()));
+//    connect(&_valueEditor, SIGNAL(editingFinished()), this, SLOT(onValueEdited()));
 
     // setup scene:
     _scene.setSceneRect(0.0, 0.0, 1.0, 1.0);
@@ -179,7 +180,7 @@ void MainWindow::runMVD()
 
 
     // draw path :
-    _scene.removeItem(_path);
+    if (_path) _scene.removeItem(_path);
     _path = new QGraphicsItemGroup();
     _scene.addItem(_path);
 
@@ -519,6 +520,21 @@ bool MainWindow::eventFilter(QObject * object, QEvent * event)
 
                 }
 
+            }
+        }
+    }
+    else if (object == &_valueEditor && _valueEditor.isVisible())
+    {
+        if (event->type() == QEvent::KeyRelease)
+        {
+            QKeyEvent * e = static_cast<QKeyEvent*>(event);
+            if (e->key() == Qt::Key_Escape)
+            {
+                _valueEditor.hide();
+            }
+            else if (e->key() == Qt::Key_Enter)
+            {
+                onValueEdited();
             }
         }
     }

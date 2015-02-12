@@ -27,7 +27,7 @@ static const double VERTEX_CIRCLE_Z = 10.0;
 static const double VERTEX_TEXT_Z = 11.0;
 static const double EDGE_LINE_Z = 0.0;
 static const double EDGE_TEXT_Z = 5.0;
-static const double PATH_LINE_Z = 4.0;
+static const double PATH_LINE_Z = 2.0;
 
 //******************************************************************************
 
