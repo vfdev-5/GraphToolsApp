@@ -13,10 +13,12 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        MainWindow.cpp \
-    GraphTools.cpp
+        GraphToolsWidget.cpp \
+    GraphTools.cpp \
+    GraphViewer.cpp
 
-HEADERS  += MainWindow.h \
-    GraphTools.h
+HEADERS  += GraphToolsWidget.h \
+    GraphTools.h \
+    GraphViewer.h
 
-FORMS    += MainWindow.ui
+FORMS    += GraphToolsWidget.ui

@@ -10,7 +10,7 @@
 
 //******************************************************************************
 
-namespace gt {
+namespace GT {
 
 //******************************************************************************
 
@@ -26,26 +26,26 @@ void Graph::setEdges(const QVector<Edge> & edges)
 
         if (!_edgeConnections.contains(vertexIndex1))
         {
-            QList<gt::EdgeConnection> vts = QList<gt::EdgeConnection>()
-                    << gt::EdgeConnection(&vertices[vertexIndex2], weight);
+            QList<GT::EdgeConnection> vts = QList<GT::EdgeConnection>()
+                    << GT::EdgeConnection(&vertices[vertexIndex2], weight);
             _edgeConnections.insert(vertexIndex1, vts);
         }
         else
         {
-            QList<gt::EdgeConnection> & vts = _edgeConnections[vertexIndex1];
-            vts << gt::EdgeConnection(&vertices[vertexIndex2], weight);
+            QList<GT::EdgeConnection> & vts = _edgeConnections[vertexIndex1];
+            vts << GT::EdgeConnection(&vertices[vertexIndex2], weight);
         }
 
         if (!_edgeConnections.contains(vertexIndex2))
         {
-            QList<gt::EdgeConnection> vts = QList<gt::EdgeConnection>()
-                    << gt::EdgeConnection(&vertices[vertexIndex1], weight);
+            QList<GT::EdgeConnection> vts = QList<GT::EdgeConnection>()
+                    << GT::EdgeConnection(&vertices[vertexIndex1], weight);
             _edgeConnections.insert(vertexIndex2, vts);
         }
         else
         {
-            QList<gt::EdgeConnection> & vts = _edgeConnections[vertexIndex2];
-            vts << gt::EdgeConnection(&vertices[vertexIndex1], weight);
+            QList<GT::EdgeConnection> & vts = _edgeConnections[vertexIndex2];
+            vts << GT::EdgeConnection(&vertices[vertexIndex1], weight);
         }
     }
 }
@@ -118,7 +118,14 @@ bool ColorGraph(Graph * graph, int color)
 }
 
 //******************************************************************************
-
+/*!
+ * \brief GreedyGraphColoring method implements greedy graph coloring algorithm
+ * \param graph
+ *
+ * Algorithm consists to iteratively color graph vertices until all vertices are colored
+ * Algorithm complexity is ???
+ *
+ */
 void GreedyGraphColoring(Graph *graph)
 {
     int color=0;
@@ -198,112 +205,73 @@ double ComputeMinDistance(const Graph & graph, int startIndex, int endIndex, QLi
     return minDistance;
 }
 
-/*
-double _ComputeMinDistance(const Graph & graph, int startIndex, int endIndex, QList<int> * path)
+//******************************************************************************
+/*!
+ * \brief FindConnectedVertices method to compute all connected vertices
+ * \param graph
+ * \param v
+ * \param connectedVertices
+ * \return
+ *
+ * Algorithm used in the method is Depth-first-search
+ * http://en.wikipedia.org/wiki/Depth-first_search
+ *
+ */
+
+QVector<Vertex *> ColorConnectedVertices(Graph & graph, Vertex & inputVertex, int color)
 {
+    QVector<Vertex *> out;
 
-    if (!TestStdDoubleMaxLimit())
-        return -12345.0;
-
-    if (!path)
-        return -12345.0;
-
-    if (startIndex < 0 || startIndex > graph.vertices.size()-1 ||
-            endIndex < 0 || endIndex > graph.vertices.size()-1)
+    if (inputVertex.color >= 0)
     {
-        return -12345.0;
+        std::cerr << "Input vertex is already colored" << std::endl;
+        return out;
     }
 
-    path->clear();
 
-    // initialization :
-    int nbVertices = graph.vertices.size();
-    QVector< QVector<double> > distMatrix(nbVertices);
-    QVector< QVector<int> > pathMatrix(nbVertices);
-
-    for (int v=0; v<nbVertices; v++)
+    QList<Vertex*> stack;
+    stack.push_back(&inputVertex);
+    out.append(&inputVertex);
+    while (!stack.isEmpty())
     {
-        Vertex vertex = graph.vertices[v];
-        distMatrix[vertex.id].resize(nbVertices-1);
-        if (vertex.id==startIndex)
+        Vertex * v = stack.takeLast();
+        if (v->color < 0)
         {
-            for (int j=0; j<nbVertices-1; j++)
-            {
-                distMatrix[vertex.id][j] = 0.0;
-            }
-        }
-        else
-        {
-            for (int j=0; j<nbVertices-1; j++)
-            {
-                distMatrix[vertex.id][j] = std::numeric_limits<double>::max();
-            }
-        }
-    }
-
-    // computation part:
-    for (int i=1; i<nbVertices-1; i++)
-    {
-        // loop on edges
-        double w = std::numeric_limits<double>::max();
-        for (int j=0; j<nbVertices; j++)
-        {
-            Vertex v = graph.vertices[j];
-            if (pathMatrix[v.id].isEmpty())
-            {
-                pathMatrix[v.id].resize(nbVertices-1);
-                pathMatrix[v.id].fill(-1);
-            }
-
-            QList<EdgeConnection> connectedVertices = graph.edges.value(v.id);
+            v->color = color;
+            out.append(v);
+            QList<EdgeConnection> connectedVertices = graph.getEdgeConnections().value(v->id);
             foreach (EdgeConnection ec, connectedVertices)
             {
-                Vertex * u = ec.first;
-                w = ec.second;
-                if (distMatrix[v.id][i] > distMatrix[u->id][i-1] + w)
-                {
-                    distMatrix[v.id][i] = distMatrix[u->id][i-1] + w;
-                    pathMatrix[v.id][i] = u->id;
-                }
+                stack.push_back(ec.first);
             }
         }
     }
-
-    // test if there is negative-weight cycle
-    double w = std::numeric_limits<double>::max();
-    int index=nbVertices-2;
-    for (int j=0; j<nbVertices; j++)
-    {
-        Vertex v = graph.vertices[j];
-        QList<EdgeConnection> connectedVertices = graph.edges.value(v.id);
-        foreach (EdgeConnection ec, connectedVertices)
-        {
-            Vertex * u = ec.first;
-            w = ec.second;
-            if (distMatrix[v.id][index] > distMatrix[u->id][index] + w)
-            {
-                std::cerr << "A negative-weight loop found" << std::endl;
-                return -12345.0;
-            }
-        }
-    }
-
-
-    double minDistance = distMatrix[endIndex][0];
-    for (int i=1;i<nbVertices-1;i++)
-    {
-        if (minDistance > distMatrix[endIndex][i])
-            minDistance = distMatrix[endIndex][i];
-    }
-
-
-
-    *path = pathMatrix[endIndex].toList();
-
-    return minDistance;
+    return out;
 
 }
-*/
+
+//******************************************************************************
+
+bool ColorConnectedVertices(Graph &graph, QVector< QVector<Vertex*> > * connectedVertices)
+{
+    if (!connectedVertices) return false;
+
+    int color = 0;
+    for (int i=0; i<graph.vertices.size();i++)
+    {
+
+        Vertex & notColoredVertex = graph.vertices[i];
+        if (notColoredVertex.color >= 0)
+            continue;
+
+        QVector<Vertex*> cvertices = ColorConnectedVertices(graph, notColoredVertex, color);
+        connectedVertices->append(cvertices);
+        color++;
+    }
+    return true;
+}
+
+
 //******************************************************************************
 
 }

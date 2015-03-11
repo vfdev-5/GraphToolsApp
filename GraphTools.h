@@ -8,7 +8,7 @@
 
 //******************************************************************************
 
-namespace gt {
+namespace GT {
 
 //******************************************************************************
 
@@ -68,6 +68,10 @@ bool TestStdDoubleMaxLimit();
 void GreedyGraphColoring(Graph * graph);
 
 double ComputeMinDistance(const Graph & graph, int startIndex, int endIndex, QList<int> *path);
+
+bool ColorConnectedVertices(Graph & graph, QVector<QVector<Vertex *> > *connectedVertices);
+
+QVector<Vertex *> ColorConnectedVertices(Graph &graph, Vertex &inputVertex, int color);
 
 //******************************************************************************
 
